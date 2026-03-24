@@ -19,7 +19,6 @@ async def root():
     .badge { background: #1A4A8A; color: white; padding: 4px 12px; border-radius: 4px; font-size: 13px; margin: 4px; display: inline-block; }
     .box { background: white; border: 1px solid #ddd; padding: 16px; border-radius: 6px; margin: 12px 0; }
     code { background: #e8e0d0; padding: 2px 8px; border-radius: 3px; font-size: 13px; }
-    pre { background: white; border: 1px solid #ddd; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
     button { background: #1A4A8A; color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 8px; }
     button:hover { background: #1A6B6B; }
     textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: Arial; }
@@ -34,10 +33,9 @@ async def root():
     <span class="badge">Gemini 2.0 Flash</span>
   </p>
   <p>An AI agent built with <strong>Google ADK</strong> that connects to a live Healthcare Claims database via <strong>MCP</strong> to detect fraud in real time.</p>
-
   <h2>Try the Agent</h2>
   <div class="box">
-    <textarea id="query" rows="3">Analyse the top risky providers and give me a fraud report.</textarea>
+    <textarea id="query" rows="3">What is the overall fraud rate in the claims database?</textarea>
     <button onclick="runAgent()">Run Agent</button>
     <div id="status" style="color:#888; font-size:13px; margin-top:8px;"></div>
   </div>
@@ -45,20 +43,17 @@ async def root():
     <strong>Agent Response:</strong>
     <div id="response" style="margin-top:12px;"></div>
   </div>
-
   <h2>Sample Queries</h2>
   <div class="box">
-    <p>• "Analyse the top risky providers and give me a fraud report."</p>
     <p>• "What is the overall fraud rate in the claims database?"</p>
+    <p>• "Analyse the top risky providers and give me a fraud report."</p>
     <p>• "Get fraud flags for provider PRV0001."</p>
     <p>• "Show me the fraud features for the riskiest provider."</p>
   </div>
-
   <p style="color:#888; font-size:13px; margin-top:40px;">
     Chandrasekaran P · BITS Pilani M.Tech AI/ML · March 2026 ·
     <a href="https://github.com/sekaranpc/google-lab-mcp-challenge">GitHub</a>
   </p>
-
   <script>
     async function runAgent() {
       const query = document.getElementById("query").value;
@@ -92,26 +87,39 @@ async def health():
 
 @app.get("/mcp/tools")
 async def mcp_tools():
-    return {
-        "tools": [
-            "fraud_summary_stats",
-            "top_risky_providers",
-            "compute_fraud_features",
-            "detect_fraud_flags",
-            "query_provider_claims",
-            "get_claim_details"
-        ]
-    }
+    return {"tools": ["fraud_summary_stats","top_risky_providers","compute_fraud_features","detect_fraud_flags","query_provider_claims","get_claim_details"]}
 
 @app.post("/run")
 async def run_agent(request: Request):
     body = await request.json()
     query = body.get("query", "Give me a fraud summary report.")
     try:
+        from google.adk.agents import LlmAgent
+        from google.adk.tools.mcp_tool import McpToolset
+        from google.adk.tools.mcp_tool.mcp_session_manager import StdioServerParameters
         from google.adk.runners import Runner
         from google.adk.sessions import InMemorySessionService
         from google.genai import types as genai_types
-        from agent import root_agent
+
+        # Initialize McpToolset inside the request handler to avoid asyncio conflicts
+        toolset = McpToolset(
+            connection_params=StdioServerParameters(
+                command="python3",
+                args=["/app/mcp_server.py", "--stdio"]
+            )
+        )
+
+        agent = LlmAgent(
+            name="healthcare_fraud_agent",
+            model="gemini-2.0-flash",
+            description="Healthcare fraud detection agent using MCP tools.",
+            instruction="""You are a healthcare fraud detection specialist.
+Use the available MCP tools to answer questions about the claims database.
+Always retrieve data using the tools and quote specific numbers in your response.
+Tools available: fraud_summary_stats, top_risky_providers, compute_fraud_features,
+detect_fraud_flags, query_provider_claims, get_claim_details.""",
+            tools=[toolset],
+        )
 
         session_service = InMemorySessionService()
         await session_service.create_session(
@@ -121,7 +129,7 @@ async def run_agent(request: Request):
         )
 
         runner = Runner(
-            agent=root_agent,
+            agent=agent,
             app_name="healthcare_fraud_agent",
             session_service=session_service
         )

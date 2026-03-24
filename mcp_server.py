@@ -164,3 +164,10 @@ def run_server_sse():
 
 def run_stdio():
     mcp.run(transport="stdio")
+
+import sys
+if __name__ == "__main__":
+    if "--stdio" in sys.argv:
+        mcp.run(transport="stdio")
+    else:
+        mcp.run(transport="stdio")
