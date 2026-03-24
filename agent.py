@@ -1,6 +1,7 @@
 import os
 from google.adk.agents import LlmAgent
-from google.adk.tools.mcp_tool import McpToolset, SseServerParams
+from google.adk.tools.mcp_tool import McpToolset
+from mcp.client.sse import SseServerParams
 
 MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL", "http://localhost:8081/sse")
 
