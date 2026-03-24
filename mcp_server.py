@@ -157,7 +157,10 @@ if __name__ == "__main__":
     port = int(os.environ.get("MCP_PORT", 8081))
     mcp.run(transport="sse", host="0.0.0.0", port=port)
 
-def run_server():
+def run_server_sse():
     import os
     port = int(os.environ.get("MCP_PORT", 8081))
     mcp.run(transport="sse", port=port)
+
+def run_stdio():
+    mcp.run(transport="stdio")

@@ -1,10 +1,7 @@
 import os
-import json
-import threading
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-import asyncio
 
 app = FastAPI(title="Healthcare Fraud Detection - MCP Agent")
 
@@ -49,13 +46,6 @@ async def root():
     <div id="response" style="margin-top:12px;"></div>
   </div>
 
-  <h2>API Endpoints</h2>
-  <div class="box">
-    <p><code>GET /health</code> — Health check</p>
-    <p><code>POST /run</code> — Run the fraud detection agent</p>
-    <p><code>GET /mcp/tools</code> — List available MCP tools</p>
-  </div>
-
   <h2>Sample Queries</h2>
   <div class="box">
     <p>• "Analyse the top risky providers and give me a fraud report."</p>
@@ -75,7 +65,7 @@ async def root():
       const status = document.getElementById("status");
       const responseBox = document.getElementById("responseBox");
       const response = document.getElementById("response");
-      status.textContent = "Agent is thinking... please wait.";
+      status.textContent = "Agent is thinking... please wait (30-60 sec).";
       responseBox.style.display = "none";
       try {
         const res = await fetch("/run", {
@@ -124,7 +114,7 @@ async def run_agent(request: Request):
         from agent import root_agent
 
         session_service = InMemorySessionService()
-        session = await session_service.create_session(
+        await session_service.create_session(
             app_name="healthcare_fraud_agent",
             user_id="demo_user",
             session_id="session_001"
@@ -154,18 +144,13 @@ async def run_agent(request: Request):
         return {"status": "ok", "query": query, "response": final_response}
 
     except Exception as e:
+        import traceback
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "message": str(e)}
+            content={"status": "error", "message": str(e), "trace": traceback.format_exc()}
         )
 
-def _run_mcp():
-    from mcp_server import mcp
-    from mcp_server import run_server; run_server()
-
 if __name__ == "__main__":
-    mcp_thread = threading.Thread(target=_run_mcp, daemon=True)
-    mcp_thread.start()
     port = int(os.environ.get("PORT", 7860))
     print(f"Starting on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)

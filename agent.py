@@ -1,9 +1,7 @@
 import os
 from google.adk.agents import LlmAgent
 from google.adk.tools.mcp_tool import McpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import SseServerParams
-
-MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL", "http://localhost:8081/sse")
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioServerParameters
 
 root_agent = LlmAgent(
     name        = "healthcare_fraud_agent",
@@ -32,7 +30,10 @@ Always quote specific numbers from the tools and explain findings in plain langu
 """,
     tools = [
         McpToolset(
-            connection_params=SseServerParams(url=MCP_SERVER_URL)
+            connection_params=StdioServerParameters(
+                command="python3",
+                args=["/app/mcp_server.py"]
+            )
         )
     ],
 )
