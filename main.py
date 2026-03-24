@@ -22,7 +22,7 @@ async def root():
     button { background: #1A4A8A; color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 8px; }
     button:hover { background: #1A6B6B; }
     textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: Arial; }
-    #response { white-space: pre-wrap; font-size: 13px; color: #1a1612; }
+    #response { white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -95,18 +95,14 @@ async def run_agent(request: Request):
     query = body.get("query", "Give me a fraud summary report.")
     try:
         from google.adk.agents import LlmAgent
-        from google.adk.tools.mcp_tool import McpToolset
-        from google.adk.tools.mcp_tool.mcp_session_manager import StdioServerParameters
+        from google.adk.tools import FunctionTool
         from google.adk.runners import Runner
         from google.adk.sessions import InMemorySessionService
         from google.genai import types as genai_types
-
-        # Initialize McpToolset inside the request handler to avoid asyncio conflicts
-        toolset = McpToolset(
-            connection_params=StdioServerParameters(
-                command="python3",
-                args=["/app/mcp_server.py", "--stdio"]
-            )
+        from mcp_server import (
+            fraud_summary_stats, top_risky_providers,
+            compute_fraud_features, detect_fraud_flags,
+            query_provider_claims, get_claim_details
         )
 
         agent = LlmAgent(
@@ -114,11 +110,18 @@ async def run_agent(request: Request):
             model="gemini-2.0-flash",
             description="Healthcare fraud detection agent using MCP tools.",
             instruction="""You are a healthcare fraud detection specialist.
-Use the available MCP tools to answer questions about the claims database.
+Use the available tools to answer questions about the claims database.
 Always retrieve data using the tools and quote specific numbers in your response.
-Tools available: fraud_summary_stats, top_risky_providers, compute_fraud_features,
+Tools: fraud_summary_stats, top_risky_providers, compute_fraud_features,
 detect_fraud_flags, query_provider_claims, get_claim_details.""",
-            tools=[toolset],
+            tools=[
+                FunctionTool(fraud_summary_stats),
+                FunctionTool(top_risky_providers),
+                FunctionTool(compute_fraud_features),
+                FunctionTool(detect_fraud_flags),
+                FunctionTool(query_provider_claims),
+                FunctionTool(get_claim_details),
+            ],
         )
 
         session_service = InMemorySessionService()
