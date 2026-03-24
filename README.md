@@ -2,7 +2,7 @@
 title: Healthcare Fraud MCP Agent
 emoji: 🏥
 colorFrom: blue
-colorTo: teal
+colorTo: green
 sdk: docker
 pinned: false
 ---
