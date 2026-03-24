@@ -107,7 +107,7 @@ async def run_agent(request: Request):
 
         agent = LlmAgent(
             name="healthcare_fraud_agent",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description="Healthcare fraud detection agent using MCP tools.",
             instruction="""You are a healthcare fraud detection specialist.
 Use the available tools to answer questions about the claims database.
