@@ -161,7 +161,7 @@ async def run_agent(request: Request):
 
 def _run_mcp():
     from mcp_server import mcp
-    mcp.run(transport="sse", host="0.0.0.0", port=8081)
+    from mcp_server import run_server; run_server()
 
 if __name__ == "__main__":
     mcp_thread = threading.Thread(target=_run_mcp, daemon=True)
